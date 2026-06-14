@@ -81,6 +81,8 @@
     color:transparent;font-family:var(--mono);font-size:11px;
     padding:1px 8px;cursor:pointer;margin:0;overflow:hidden}
   .slot.sel{border-top-color:var(--copper);background:rgba(224,151,63,.05)}
+  .slot:hover{border-top-color:rgba(143,176,212,.35)!important;color:rgba(143,176,212,.35)!important;overflow:visible!important}
+  .slot:hover .slot-label{display:inline}
   .blk{font-family:var(--mono);font-size:13px;border:1px solid var(--paper-dim);
     background:var(--bp-mid);padding:6px 8px;margin:2px 0;display:flex;
     align-items:center;gap:8px;position:relative}
@@ -367,7 +369,7 @@
     <section class="panel" id="palPanel">
     <h2>Bausteine · Lager</h2>
     <div id="palette"></div>
-    <p class="pal-note">Bausteine per <b>Drag&amp;Drop</b> ins Programm ziehen – die Pfeile zeigen, wo du ablegen kannst. Alternativ: Einfügestelle klicken, dann Baustein anklicken. × legt einen Baustein zurück.</p>
+    <p class="pal-note">Bausteine per <b>Drag&amp;Drop</b> ins Programm ziehen. Oder: auf eine <b>Einfügestelle</b> klicken (‣) – dann öffnet sich ein Auswahlmenü. × legt einen Baustein zurück ins Lager.</p>
   </section>
 
   <section class="panel" id="progPanel">
@@ -678,8 +680,8 @@ function slotBtn(arr,idx){
   s.onclick=()=>{
     if(!dragState){
       selSlot={arr,idx};
-      if(isMobile())openMobileModal();
-      else renderAll();
+      renderAll();
+      openMobileModal();
     }
   };
   return s;
