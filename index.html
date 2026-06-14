@@ -153,10 +153,13 @@
     /* Hinweistext im Lager auf Mobile ausblenden (Modal ersetzt das) */
     .pal-note{display:none}}
 
-  /* ---- Mobile Modal (Baustein-Auswahl) ---- */
+  /* ---- Modal (Baustein-Auswahl) ---- */
   #mmModal{display:none;position:fixed;inset:0;background:rgba(5,16,30,.78);
     z-index:45;align-items:flex-end;justify-content:center}
   #mmModal.open{display:flex}
+  @media(min-width:641px){
+    #mmModal{background:rgba(5,16,30,.38)}
+  }
   .mm-sheet{width:100%;max-height:78vh;overflow-y:auto;
     background:var(--bp-deep);border-top:2px solid var(--copper);
     padding:16px 14px 32px;display:flex;flex-direction:column;gap:0}
@@ -576,6 +579,7 @@ function makeDraggable(el,node,arr){
   });
   el.addEventListener("touchstart",e=>{
     if(e.target.closest(".rm")||e.target.tagName==="SELECT"||animating)return;
+    if(e.target.closest(".slot"))return;
     e.preventDefault();e.stopPropagation();
     const t0=e.touches[0],sx=t0.clientX,sy=t0.clientY;let fired=false;
     function tmv(ev){
@@ -647,6 +651,8 @@ const progEl=document.getElementById("program");
 /* ================= Mobile Modal ================= */
 function isMobile(){return window.innerWidth<=640;}
 function openMobileModal(){
+  const modal=document.getElementById("mmModal");
+  const sheet=modal.querySelector(".mm-sheet");
   const blocksEl=document.getElementById("mmBlocks");
   blocksEl.innerHTML="";
   let any=false;
@@ -661,10 +667,22 @@ function openMobileModal(){
     blocksEl.appendChild(b);
   }
   if(!any)blocksEl.innerHTML='<p class="mm-empty">Keine Bausteine mehr im Lager.</p>';
-  document.getElementById("mmModal").classList.add("open");
+  if(window.innerWidth>640){
+    const r=document.getElementById("palPanel").getBoundingClientRect();
+    Object.assign(sheet.style,{
+      position:"fixed",left:r.left+"px",top:r.top+"px",
+      width:r.width+"px",maxHeight:(window.innerHeight-r.top-20)+"px",
+      border:"2px solid var(--copper)",borderTop:"2px solid var(--copper)"
+    });
+  }else{
+    Object.assign(sheet.style,{position:"",left:"",top:"",width:"",maxHeight:"",border:""});
+  }
+  modal.classList.add("open");
 }
 function closeMobileModal(){
-  document.getElementById("mmModal").classList.remove("open");
+  const modal=document.getElementById("mmModal");
+  modal.querySelector(".mm-sheet").style.cssText="";
+  modal.classList.remove("open");
 }
 document.getElementById("mmClose").onclick=closeMobileModal;
 document.getElementById("mmModal").addEventListener("click",e=>{
