@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Station null</title>
+<style>
+  :root{
+    --bp-deep:#0b2440;
+    --bp-mid:#123459;
+    --bp-line:#27507f;
+    --paper:#dce9f7;
+    --paper-dim:#8fb0d4;
+    --copper:#e0973f;
+    --copper-dim:#a9742f;
+    --ok:#5fd6a2;
+    --bad:#f07a6e;
+    --mono:ui-monospace,'Cascadia Code','SF Mono',Menlo,Consolas,monospace;
+    --sans:'Avenir Next','Segoe UI',system-ui,sans-serif;
+    --cat-loop:#3dbcc8;
+    --cat-move:#58d6a8;
+    --cat-turn:#a07ee8;
+    --cat-cond:#d4a73f;
+    --cat-action:#e07a50;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bp-deep);
+    background-image:
+      linear-gradient(var(--bp-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bp-line) 1px, transparent 1px);
+    background-size:32px 32px;
+    background-position:-1px -1px;
+    color:var(--paper);
+    font-family:var(--sans);
+    min-height:100vh;
+    padding:20px 16px 60px;
+  }
+  header{border:2px solid var(--paper-dim);
+    background:rgba(11,36,64,.92);padding:18px 22px;position:relative;
+    grid-column:1/3;grid-row:1}
+  header::after{content:"BLATT 03/03 · FREIGABE: NUR FÜR AGENTEN";
+    position:absolute;top:8px;right:14px;font-family:var(--mono);
+    font-size:10px;letter-spacing:.14em;color:var(--paper-dim)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--copper);margin-bottom:6px}
+  h1{font-size:clamp(20px,3.4vw,30px);font-weight:700;letter-spacing:.02em}
+  .brief{margin-top:10px;max-width:780px;color:var(--paper-dim);font-size:14.5px;line-height:1.55}
+  .brief b{color:var(--paper)}
+  .brief .cp{color:var(--copper)}
+
+  main{max-width:1180px;margin:0 auto;display:grid;
+    grid-template-columns:1fr 350px;gap:16px;align-items:start}
+  .left-col{display:flex;flex-direction:column;gap:16px}
+  .sub-grid{display:grid;grid-template-columns:260px 1fr;gap:16px;align-items:start}
+  @media(max-width:980px){main{grid-template-columns:1fr}
+    .sub-grid{grid-template-columns:220px 1fr}}
+  @media(max-width:640px){.sub-grid{grid-template-columns:1fr}}
+
+  .panel{border:2px solid var(--paper-dim);background:rgba(11,36,64,.92);padding:14px}
+  .panel h2{font-family:var(--mono);font-size:12px;letter-spacing:.18em;
+    color:var(--copper);text-transform:uppercase;border-bottom:1px solid var(--bp-line);
+    padding-bottom:8px;margin-bottom:12px}
+
+  /* ---- Palette ---- */
+  .pal-btn{display:flex;justify-content:space-between;align-items:center;width:100%;
+    font-family:var(--mono);font-size:12.5px;text-align:left;color:var(--paper);
+    background:var(--bp-mid);border:1px solid var(--paper-dim);
+    padding:9px 10px;margin-bottom:8px;cursor:pointer;transition:border-color .12s, transform .08s;gap:6px}
+  .pal-btn:hover:not(:disabled){border-color:var(--copper);transform:translateX(2px)}
+  .pal-btn:disabled{opacity:.32;cursor:not-allowed}
+  .pal-btn .stock{font-size:11px;color:var(--copper);border:1px solid var(--copper-dim);
+    padding:1px 6px;border-radius:10px;white-space:nowrap}
+  .pal-note{font-size:12px;color:var(--paper-dim);line-height:1.5;margin-top:10px}
+
+  /* ---- Programm ---- */
+  #progPanel{min-height:340px}
+  .slot{display:block;width:100%;text-align:left;background:none;
+    border:none;border-top:2px solid transparent;
+    color:transparent;font-family:var(--mono);font-size:11px;
+    padding:1px 8px;cursor:pointer;margin:0;overflow:hidden}
+  .slot.sel{border-top-color:var(--copper);background:rgba(224,151,63,.05)}
+  .blk{font-family:var(--mono);font-size:13px;border:1px solid var(--paper-dim);
+    background:var(--bp-mid);padding:6px 8px;margin:2px 0;display:flex;
+    align-items:center;gap:8px;position:relative}
+  .blk.container{display:block;border-left:3px solid var(--copper-dim)}
+  .blk-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .blk .kw{color:var(--copper)}
+  .blk select{font-family:var(--mono);font-size:12px;background:var(--bp-deep);
+    color:var(--paper);border:1px solid var(--paper-dim);padding:2px 4px}
+  .blk .rm{margin-left:auto;background:none;border:none;color:var(--paper-dim);
+    font-size:14px;cursor:pointer;padding:0 4px;line-height:1}
+  .blk .rm:hover{color:var(--bad)}
+  .body-ind{margin-left:18px;border-left:1px dotted var(--bp-line);padding-left:8px;margin-top:4px}
+  .body-label{font-family:var(--mono);font-size:11px;color:var(--paper-dim);margin-top:4px}
+  .prog-actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .act{font-family:var(--mono);font-size:13px;letter-spacing:.06em;padding:10px 16px;
+    cursor:pointer;border:2px solid var(--copper);background:var(--copper);color:#1d1206;font-weight:700}
+  .act:hover:not(:disabled){background:#f0ab57;border-color:#f0ab57}
+  .act:disabled{opacity:.4;cursor:not-allowed}
+  .act.ghost{background:none;color:var(--paper-dim);border-color:var(--paper-dim);font-weight:400}
+  .act.ghost:hover:not(:disabled){color:var(--paper);background:rgba(255,255,255,.05)}
+  #tries{font-family:var(--mono);font-size:12px;color:var(--paper-dim);margin-top:10px}
+  .hint{display:none;margin-top:8px;border:1px dashed var(--copper);padding:10px 12px;
+    font-size:13px;color:var(--paper);line-height:1.5;background:rgba(224,151,63,.07)}
+  .hint b{color:var(--copper)}
+
+  /* ---- Labyrinthe ---- */
+  .maze-card{margin-bottom:14px}
+  .maze-head{display:flex;justify-content:space-between;align-items:baseline;
+    font-family:var(--mono);font-size:12px;margin-bottom:6px;gap:8px}
+  .maze-head .nm{color:var(--paper-dim);letter-spacing:.12em}
+  .status{font-size:11.5px;text-align:right}
+  .status.ok{color:var(--ok)} .status.bad{color:var(--bad)} .status.run{color:var(--copper)}
+  canvas{display:block;width:100%;image-rendering:pixelated;border:1px solid var(--bp-line)}
+  .legend{font-family:var(--mono);font-size:11px;color:var(--paper-dim);line-height:1.7;margin-top:4px}
+  .legend .cp{color:var(--copper)}
+
+  #reveal{display:none;position:fixed;inset:0;background:rgba(5,16,30,.9);
+    z-index:50;align-items:center;justify-content:center;flex-direction:column;gap:18px;text-align:center;padding:20px}
+  #reveal .frame{border:2px solid var(--copper);background:var(--bp-deep);padding:36px 44px;max-width:560px}
+  #reveal .eyebrow{margin-bottom:14px}
+  #word{font-family:var(--mono);font-size:clamp(34px,8vw,58px);letter-spacing:.28em;
+    color:var(--copper);text-shadow:0 0 22px rgba(224,151,63,.45);margin:8px 0 14px}
+  #word span{opacity:0;display:inline-block;animation:pop .5s forwards}
+  @keyframes pop{from{opacity:0;transform:translateY(14px) scale(.6)}to{opacity:1;transform:none}}
+  #reveal p{color:var(--paper-dim);font-size:14px;line-height:1.55}
+  @media(prefers-reduced-motion:reduce){
+    #word span{animation:none;opacity:1}
+    .pal-btn:hover:not(:disabled){transform:none}}
+
+  /* ---- Touch & Mobile ---- */
+  button,select{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  @media(max-width:640px){
+    body{padding:12px 10px 40px}
+    header{padding:12px 14px}
+    header::after{display:none}
+    .brief{font-size:13px}
+    .pal-btn{min-height:44px;font-size:13px}
+    .act{min-height:44px}
+    .blk select,.blk .rm{min-height:36px;padding:0 8px}
+    #progPanel{min-height:160px}}
+
+  /* ---- Drag & Drop ---- */
+  body.dragging{cursor:grabbing!important;user-select:none}
+  body.dragging *{cursor:grabbing!important}
+  .pal-btn:not(:disabled){cursor:grab}
+  .blk{cursor:grab}
+  .blk .rm,.blk select{cursor:default}
+  .drag-ghost{position:fixed;pointer-events:none;z-index:999;
+    font-family:var(--mono);font-size:13px;border:2px solid var(--copper);
+    background:var(--bp-mid);padding:6px 12px;color:var(--paper);white-space:nowrap;
+    box-shadow:0 6px 24px rgba(0,0,0,.65);opacity:.88;transform:translate(12px,-50%)}
+  /* Slot-Inhalt: immer versteckt bis zum Drag */
+  .slot .drop-arr{opacity:0;font-size:9px;color:var(--paper-dim);margin-right:3px;display:inline-block}
+  .slot .slot-label{display:none}
+  /* Während Drag: Slots leicht aufklappen, Pfeil schwach sichtbar */
+  body.dragging .slot{padding:4px 8px;border-top:1px dashed rgba(143,176,212,.18);
+    color:rgba(143,176,212,.2);overflow:visible}
+  body.dragging .slot.sel{border-top-color:var(--copper);border-top-style:solid}
+  body.dragging .slot .drop-arr{opacity:.3}
+  /* Nur der aktiv gehoverte Slot bekommt Orange + Text */
+  .slot.drop-target{border:1px solid var(--copper)!important;border-top-width:2px!important;
+    color:var(--copper)!important;background:rgba(224,151,63,.18)!important;
+    padding:7px 8px!important;overflow:visible!important}
+  .slot.drop-target .drop-arr{opacity:1!important;color:var(--copper)!important}
+  .slot.drop-target .slot-label{display:inline}
+  /* Lager-Hover: rötlich wenn Block dorthin gezogen wird */
+  #palPanel.drag-over{border-color:var(--bad);background:rgba(240,122,110,.07)}
+
+  /* ---- Kategorie-Farben ---- */
+  .blk.cat-loop{border-left:3px solid var(--cat-loop);background:rgba(61,188,200,.08)}
+  .blk.cat-move{border-left:3px solid var(--cat-move);background:rgba(88,214,168,.08)}
+  .blk.cat-turn{border-left:3px solid var(--cat-turn);background:rgba(160,126,232,.08)}
+  .blk.cat-cond{border-left:3px solid var(--cat-cond);background:rgba(212,167,63,.08)}
+  .blk.cat-action{border-left:3px solid var(--cat-action);background:rgba(224,122,80,.08)}
+  .blk.cat-loop .kw{color:var(--cat-loop)}
+  .blk.cat-cond .kw{color:var(--cat-cond)}
+  .blk.cat-move>span:first-child{color:var(--cat-move)}
+  .blk.cat-turn>span:first-child{color:var(--cat-turn)}
+  .blk.cat-action>span:first-child{color:var(--cat-action)}
+  .pal-btn.cat-loop{border-left:3px solid var(--cat-loop)}
+  .pal-btn.cat-move{border-left:3px solid var(--cat-move)}
+  .pal-btn.cat-turn{border-left:3px solid var(--cat-turn)}
+  .pal-btn.cat-cond{border-left:3px solid var(--cat-cond)}
+  .pal-btn.cat-action{border-left:3px solid var(--cat-action)}
+
+  /* ---- Boot-Screen ---- */
+  #bootScreen{
+    position:fixed;inset:0;z-index:9999;
+    background:var(--bp-deep);
+    background-image:
+      linear-gradient(var(--bp-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bp-line) 1px, transparent 1px);
+    background-size:32px 32px;
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity .5s ease;
+  }
+  #bootScreen.fade-out{opacity:0;pointer-events:none}
+  #bootConsole{
+    width:min(700px,96vw);
+    border:2px solid var(--paper-dim);
+    background:rgba(11,36,64,.97);
+    padding:24px 28px;
+    font-family:var(--mono);
+    font-size:13px;
+    color:var(--ok);
+    line-height:1.75;
+    position:relative;
+  }
+  #bootConsole::before{
+    content:"STATION-NULL // ZUGANGS-TERMINAL v4.1.7";
+    display:block;
+    font-size:10px;
+    letter-spacing:.18em;
+    color:var(--copper);
+    border-bottom:1px solid var(--bp-line);
+    padding-bottom:10px;
+    margin-bottom:14px;
+  }
+  #bootConsole .boot-line{display:block;white-space:pre}
+  #bootConsole .boot-line.warn{color:var(--bad)}
+  #bootConsole .boot-line.ok{color:var(--ok)}
+  #bootConsole .boot-line.dim{color:var(--paper-dim)}
+  #bootConsole .boot-line.hi{color:var(--copper);font-weight:bold}
+  #bootConsole .boot-line.final{
+    color:var(--ok);font-size:15px;letter-spacing:.1em;
+    border-top:1px solid var(--bp-line);margin-top:12px;padding-top:10px;
+  }
+  #bootCursor{display:inline-block;width:8px;height:1.1em;
+    background:var(--ok);vertical-align:text-bottom;
+    animation:blink .7s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- ======= BOOT SCREEN ======= -->
+<div id="bootScreen">
+  <div id="bootConsole">
+    <span id="bootLines"></span><span id="bootCursor"></span>
+  </div>
+</div>
+<script>
+(function(){
+  const lines = [
+    {t:0,   cls:"dim",  tx:"Systemstart wird initialisiert ..."},
+    {t:220, cls:"",     tx:"[0x01] Verbindung zu HOST-KERN aufgebaut"},
+    {t:450, cls:"warn", tx:"[WARNUNG] Unbekanntes Gerät erkannt — Zugriff wird erzwungen"},
+    {t:700, cls:"",     tx:"[0x02] Netzwerkschnittstellen gescannt ... OK"},
+    {t:900, cls:"warn", tx:"[TROJANER-MODUL] Injektion in Systemprozess 'svchost.exe' ... OK"},
+    {t:1100,cls:"",     tx:"[0x03] Firewall-Bypass aktiv"},
+    {t:1280,cls:"warn", tx:"[DATEI-EXTRAKTION] /private/kontakte  ████████ 100 %"},
+    {t:1450,cls:"warn", tx:"[DATEI-EXTRAKTION] /private/dokumente ████████ 100 %"},
+    {t:1620,cls:"warn", tx:"[DATEI-EXTRAKTION] /private/browser-cache ██████ 100 %"},
+    {t:1800,cls:"dim",  tx:"[0x04] Verschlüsselung umgangen — Vollzugriff erteilt"},
+    {t:2000,cls:"hi",   tx:"[ROOT] Systemkontrolle übernommen · alle Berechtigungen aktiv"},
+    {t:2350,cls:"ok",   tx:"Kanalaufbau zu STATION NULL ..."},
+    {t:2650,cls:"final",tx:"✓  STATION NULL ERREICHT · ABSTIEG GEÖFFNET"},
+  ];
+
+  const container = document.getElementById('bootLines');
+  const cursor    = document.getElementById('bootCursor');
+  const screen    = document.getElementById('bootScreen');
+
+  lines.forEach(({t, cls, tx}) => {
+    setTimeout(() => {
+      const s = document.createElement('span');
+      s.className = 'boot-line' + (cls ? ' '+cls : '');
+      s.textContent = tx;
+      container.appendChild(s);
+      container.appendChild(document.createTextNode('\n'));
+    }, t);
+  });
+
+  const lastT = lines[lines.length - 1].t;
+  setTimeout(() => {
+    cursor.style.display = 'none';
+    setTimeout(() => {
+      screen.classList.add('fade-out');
+      setTimeout(() => screen.remove(), 520);
+    }, 2000);
+  }, lastT + 80);
+})();
+</script>
+
+<main>
+  <div class="left-col">
+    <header>
+      <div class="eyebrow">INFORMATIK-RALLYE · LETZTE STATION</div>
+      <h1>Station <span style="font-family:var(--mono);color:var(--cat-turn);font-weight:700">null</span></h1>
+      <p class="brief">
+        Ein Wartungsroboter ist in <b>drei verschiedenen Sektoren</b> gestrandet.
+        Du kannst ihm <b>ein einziges Programm</b> aufspielen – dasselbe Programm muss ihn
+        aus <b>allen drei</b> Sektoren zur Ladestation <span class="cp">⚡</span> bringen.
+        Der Roboter kennt die Karten nicht. Er hat nur seine Sensoren: Er kann prüfen,
+        ob <b>vorne, links oder rechts frei</b> ist und ob direkt vor ihm ein
+        <b>Schott</b> <span class="cp">▦</span> liegt.
+        Manche Ladestationen sind hinter einem Schott verriegelt. Es lässt sich nur per
+        <b>öffneSchott()</b> entriegeln – und nur, wenn der Roboter vorher die
+        <b>Schlüsselkarte</b> <span class="cp">🔑</span> mit <b>schlüsselAufheben()</b> eingesammelt hat.
+        Fährt der Roboter gegen eine Wand <i>oder ein geschlossenes Schott</i>, ist er zerstört.
+        Findet er nach 300 Schritten keine Station, ist sein Akku leer.
+      </p>
+    </header>
+    <div class="sub-grid">
+    <section class="panel" id="palPanel">
+    <h2>Bausteine · Lager</h2>
+    <div id="palette"></div>
+    <p class="pal-note">Bausteine per <b>Drag&amp;Drop</b> ins Programm ziehen – die Pfeile zeigen, wo du ablegen kannst. Alternativ: Einfügestelle klicken, dann Baustein anklicken. × legt einen Baustein zurück.</p>
+  </section>
+
+  <section class="panel" id="progPanel">
+    <h2>Programm · roboter.run</h2>
+    <div id="program"></div>
+    <div class="prog-actions">
+      <button class="act" id="runBtn">▶ Aufspielen &amp; starten</button>
+      <button class="act ghost" id="rewindBtn" disabled>↺ Zurücksetzen</button>
+      <button class="act ghost" id="resetBtn">Programm löschen</button>
+    </div>
+    <div id="tries">Übertragungen: 0</div>
+    <div class="hint" id="hint1"><b>Funkspruch der Zentrale:</b> „Unsere alten Ingenieure
+    haben sich in solchen Anlagen nie verlaufen. Ihr Trick: immer eine Hand an der Wand
+    lassen – und zwar <i>immer dieselbe</i>. Frag dich bei jedem Schritt zuerst, was auf
+    dieser Seite des Roboters los ist.“</div>
+    <div class="hint" id="hint2"><b>Zweiter Funkspruch:</b> „Das Schott hat Vorrang.
+    Bevor sich der Roboter an der Wand orientiert, sollte er prüfen, ob direkt vor ihm
+    ein Schott liegt. Sonst dreht er einfach ab – ein geschlossenes Schott fühlt sich
+    für seine Sensoren wie eine Wand an.“</div>
+  </section>
+    </div><!-- sub-grid -->
+  </div><!-- left-col -->
+
+  <section class="panel" id="mazePanel">
+    <h2>Sektoren · Live-Telemetrie</h2>
+    <div class="maze-card"><div class="maze-head"><span class="nm">SEKTOR A · LEITUNGSSCHACHT</span><span class="status" id="st0">bereit</span></div><canvas id="cv0"></canvas></div>
+    <div class="maze-card"><div class="maze-head"><span class="nm">SEKTOR B · KÜHLTRAKT</span><span class="status" id="st1">bereit</span></div><canvas id="cv1"></canvas></div>
+    <div class="maze-card"><div class="maze-head"><span class="nm">SEKTOR C · REAKTORRING</span><span class="status" id="st2">bereit</span></div><canvas id="cv2"></canvas></div>
+    <p class="legend"><span class="cp">⚡</span> Ladestation (Kreis+Blitz) &nbsp;·&nbsp;
+      <span class="cp">▦</span> Schott (verriegelt) &nbsp;·&nbsp;
+      🔑 Schlüsselkarte &nbsp;·&nbsp;
+      <span class="cp">▶</span> Roboter (goldener Punkt = Karte an Bord)</p>
+  </section>
+</main>
+<div id="reveal">
+  <div class="frame">
+    <div class="eyebrow">ZUGANGSCODE ENTSCHLÜSSELT</div>
+    <div id="word"></div>
+    <p>Der Roboter hat in allen drei Sektoren die Ladestation erreicht.<br>
+    Notiert das Lösungswort und meldet euch bei der Rallye-Leitung.</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= Labyrinthe (simulationsgeprüft) =================
+   # Wand · . frei · S Start · Z Ladestation · T Schott · K Schlüsselkarte */
+const DIRS=[[0,-1],[1,0],[0,1],[-1,0]]; // N,E,S,W
+function parseMaze(str,startDir){
+  const grid=str.trim().split("\n").map(r=>r.split(""));
+  let start,goal,door=null,key=null;
+  grid.forEach((row,y)=>row.forEach((c,x)=>{
+    if(c==="S"){start=[x,y];grid[y][x]=".";}
+    if(c==="Z"){goal=[x,y];grid[y][x]=".";}
+    if(c==="T"){door=[x,y];grid[y][x]=".";}
+    if(c==="K"){key=[x,y];grid[y][x]=".";}
+  }));
+  return {grid,start,goal,door,key,startDir,w:grid[0].length,h:grid.length};
+}
+const MAZES=[
+parseMaze(`
+#########
+#S#Z..#.#
+#.###.#.#
+#.#...#.#
+#.#T###.#
+#.#..K..#
+#.#####.#
+#.......#
+#########`,2),
+parseMaze(`
+#########
+#.....#.#
+###T#.#.#
+#...#...#
+#.#.###.#
+###Z#...#
+#S###.###
+#....K..#
+#########`,2),
+parseMaze(`
+###########
+#..Z#...#.#
+#.###.#...#
+#.#...###.#
+#.#.#.#...#
+#.#S#.#.#.#
+#.#...#K#.#
+#.#######.#
+#....T....#
+###########`,0)
+];
+const MAX_STEPS=300;
+
+/* ================= Block-Modell ================= */
+const BLOCKDEFS={
+  loop:{label:"wiederhole solange Ziel nicht erreicht",stock:Infinity,container:true},
+  loopN:{label:"wiederhole … mal",stock:Infinity,container:true},
+  if:{label:"wenn … dann … sonst …",stock:Infinity,container:true},
+  fwd:{label:"vorwärts()",stock:Infinity},
+  tr:{label:"dreheRechts()",stock:Infinity},
+  tl:{label:"dreheLinks()",stock:Infinity},
+  tu:{label:"dreheUm()",stock:Infinity},
+  pickup:{label:"schlüsselAufheben()",stock:Infinity},
+  open:{label:"öffneSchott()",stock:Infinity}
+};
+const CONDS={front:"vorne frei",right:"rechts frei",left:"links frei",door:"Schott direkt vor mir",onKey:"Schlüssel unter mir",hasKey:"Schlüssel dabei"};
+const BLOCK_CAT={loop:"loop",loopN:"loop",fwd:"move",tr:"turn",tl:"turn",tu:"turn",if:"cond",pickup:"action",open:"action"};
+let stock={}; for(const k in BLOCKDEFS) stock[k]=BLOCKDEFS[k].stock;
+let program=[];
+let nextId=1;
+let selSlot={arr:program,idx:0};
+let tries=0, animating=false;
+let dragState=null;
+
+function makeNode(type){
+  const n={id:nextId++,type};
+  if(type==="if"){n.cond="front";n.then=[];n.else=[];}
+  if(type==="loop"){n.body=[];}
+  if(type==="loopN"){n.count=3;n.body=[];}
+  return n;
+}
+function restock(node){
+  stock[node.type]++;
+  (node.then||[]).forEach(restock);
+  (node.else||[]).forEach(restock);
+  (node.body||[]).forEach(restock);
+}
+
+/* ================= Drag & Drop ================= */
+function startDrag(info,clientX,clientY){
+  const def=BLOCKDEFS[info.type==='palette'?info.blockType:info.node.type];
+  const ghost=document.createElement("div");
+  ghost.className="drag-ghost";
+  ghost.textContent=(def.container?"⟳ ":"")+def.label;
+  ghost.style.left=clientX+"px";
+  ghost.style.top=clientY+"px";
+  document.body.appendChild(ghost);
+  document.body.classList.add("dragging");
+  dragState={...info,ghostEl:ghost,targetSlot:null};
+}
+function setDropTarget(slotEl){
+  document.querySelectorAll(".slot.drop-target").forEach(e=>e.classList.remove("drop-target"));
+  slotEl.classList.add("drop-target");
+  dragState.targetSlot=slotEl._slotRef;
+}
+function endDrag(){
+  if(!dragState)return;
+  const{type,blockType,node,sourceArr,sourceIdx,ghostEl,targetSlot,dropEl}=dragState;
+  ghostEl.remove();
+  document.body.classList.remove("dragging");
+  document.querySelectorAll(".slot.drop-target").forEach(e=>e.classList.remove("drop-target"));
+  document.getElementById("palPanel").classList.remove("drag-over");
+  dragState=null;
+  if(!targetSlot){
+    if(type==='program'){
+      // Über Lager abgelegt → Block ins Lager zurücklegen
+      if(dropEl&&dropEl.closest("#palPanel")){restock(node);}
+      else{sourceArr.splice(sourceIdx,0,node);selSlot={arr:sourceArr,idx:sourceIdx};}
+    }
+    renderAll();return;
+  }
+  if(type==='palette'){
+    if(stock[blockType]<=0){renderAll();return;}
+    stock[blockType]--;
+    const n=makeNode(blockType);
+    targetSlot.arr.splice(targetSlot.idx,0,n);
+    selSlot={arr:targetSlot.arr,idx:targetSlot.idx+1};
+  }else{
+    targetSlot.arr.splice(targetSlot.idx,0,node);
+    selSlot={arr:targetSlot.arr,idx:targetSlot.idx+1};
+  }
+  renderAll();
+}
+function makeDraggable(el,node,arr){
+  const tryStart=(clientX,clientY)=>{
+    if(animating)return;
+    const i=arr.indexOf(node);if(i===-1)return;
+    arr.splice(i,1);
+    if(selSlot.arr===arr&&selSlot.idx>i)selSlot.idx--;
+    renderAll();
+    startDrag({type:'program',node,sourceArr:arr,sourceIdx:i},clientX,clientY);
+  };
+  el.addEventListener("mousedown",e=>{
+    if(e.target.closest(".rm")||e.target.tagName==="SELECT"||animating)return;
+    e.preventDefault();e.stopPropagation();
+    const sx=e.clientX,sy=e.clientY;let fired=false;
+    function mv(ev){
+      if(fired||Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;
+      fired=true;document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);
+      tryStart(ev.clientX,ev.clientY);
+    }
+    function up(){document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);}
+    document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);
+  });
+  el.addEventListener("touchstart",e=>{
+    if(e.target.closest(".rm")||e.target.tagName==="SELECT"||animating)return;
+    e.preventDefault();e.stopPropagation();
+    const t0=e.touches[0],sx=t0.clientX,sy=t0.clientY;let fired=false;
+    function tmv(ev){
+      if(fired)return;
+      const t2=ev.touches[0];
+      if(Math.hypot(t2.clientX-sx,t2.clientY-sy)<8)return;
+      fired=true;cleanup();tryStart(t2.clientX,t2.clientY);
+    }
+    function tup(){cleanup();}
+    function cleanup(){document.removeEventListener("touchmove",tmv);document.removeEventListener("touchend",tup);}
+    document.addEventListener("touchmove",tmv,{passive:false});
+    document.addEventListener("touchend",tup);
+  },{passive:false});
+}
+
+/* ================= Rendering: Palette ================= */
+const palEl=document.getElementById("palette");
+function renderPalette(){
+  palEl.innerHTML="";
+  for(const k in BLOCKDEFS){
+    const b=document.createElement("button");
+    b.className=`pal-btn cat-${BLOCK_CAT[k]}`;
+    b.disabled=stock[k]<=0||animating;
+    b.innerHTML=`<span>${BLOCKDEFS[k].container?"⟳ ":""}${BLOCKDEFS[k].label}</span>`;
+    if(!b.disabled){
+      b.addEventListener("mousedown",e=>{
+        e.preventDefault();
+        const sx=e.clientX,sy=e.clientY;let fired=false;
+        function mv(ev){
+          if(fired||Math.hypot(ev.clientX-sx,ev.clientY-sy)<6)return;
+          fired=true;document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);
+          startDrag({type:'palette',blockType:k},ev.clientX,ev.clientY);
+        }
+        function up(){
+          document.removeEventListener("mousemove",mv);document.removeEventListener("mouseup",up);
+          if(!fired)insertBlock(k);
+        }
+        document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);
+      });
+      b.addEventListener("touchstart",e=>{
+        e.preventDefault();
+        const t0=e.touches[0],sx=t0.clientX,sy=t0.clientY;let fired=false;
+        function tmv(ev){
+          if(fired)return;
+          const t2=ev.touches[0];
+          if(Math.hypot(t2.clientX-sx,t2.clientY-sy)<8)return;
+          fired=true;cleanup();startDrag({type:'palette',blockType:k},t2.clientX,t2.clientY);
+        }
+        function tup(){cleanup();if(!fired)insertBlock(k);}
+        function cleanup(){document.removeEventListener("touchmove",tmv);document.removeEventListener("touchend",tup);}
+        document.addEventListener("touchmove",tmv,{passive:false});
+        document.addEventListener("touchend",tup);
+      },{passive:false});
+    }
+    palEl.appendChild(b);
+  }
+}
+function insertBlock(type){
+  if(stock[type]<=0||animating)return;
+  stock[type]--;
+  const n=makeNode(type);
+  selSlot.arr.splice(selSlot.idx,0,n);
+  selSlot={arr:selSlot.arr,idx:selSlot.idx+1};
+  renderAll();
+}
+
+/* ================= Rendering: Programm ================= */
+const progEl=document.getElementById("program");
+function slotBtn(arr,idx){
+  const s=document.createElement("button");
+  s.className="slot"+(selSlot.arr===arr&&selSlot.idx===idx?" sel":"");
+  s.innerHTML='<span class="drop-arr">▶</span><span class="slot-label">‣ hier einfügen</span>';
+  s._slotRef={arr,idx};
+  s.addEventListener("mouseenter",()=>{if(dragState)setDropTarget(s);});
+  s.onclick=()=>{if(!dragState){selSlot={arr,idx};renderAll();}};
+  return s;
+}
+function renderList(arr,parentEl){
+  parentEl.appendChild(slotBtn(arr,0));
+  arr.forEach((node,i)=>{
+    parentEl.appendChild(renderNode(node,arr));
+    parentEl.appendChild(slotBtn(arr,i+1));
+  });
+}
+function rmBtn(node,arr){
+  const b=document.createElement("button");
+  b.className="rm";b.textContent="×";b.title="Baustein zurücklegen";
+  b.onclick=(e)=>{e.stopPropagation();
+    if(animating)return;
+    const i=arr.indexOf(node);arr.splice(i,1);restock(node);
+    selSlot={arr,idx:i};renderAll();};
+  return b;
+}
+/* ---- Lösung ---- */
+const loesungswort = "TERMINAL";
+
+function renderNode(node,arr){
+  const el=document.createElement("div");
+  if(node.type==="if"){
+    el.className="blk container cat-cond";
+    const head=document.createElement("div");head.className="blk-head";
+    head.innerHTML=`<span class="kw">wenn</span>`;
+    const sel=document.createElement("select");
+    for(const c in CONDS){const o=document.createElement("option");o.value=c;o.textContent=CONDS[c];sel.appendChild(o);}
+    sel.value=node.cond;
+    sel.onchange=()=>{node.cond=sel.value;};
+    head.appendChild(sel);
+    head.insertAdjacentHTML("beforeend",`<span class="kw">dann</span>`);
+    head.appendChild(rmBtn(node,arr));
+    el.appendChild(head);
+    const t=document.createElement("div");t.className="body-ind";renderList(node.then,t);el.appendChild(t);
+    el.insertAdjacentHTML("beforeend",`<div class="body-label">sonst</div>`);
+    const e2=document.createElement("div");e2.className="body-ind";renderList(node.else,e2);el.appendChild(e2);
+  }else if(node.type==="loop"){
+    el.className="blk container cat-loop";
+    const head=document.createElement("div");head.className="blk-head";
+    head.innerHTML=`<span class="kw">wiederhole</span> solange Ziel nicht erreicht`;
+    head.appendChild(rmBtn(node,arr));
+    el.appendChild(head);
+    const b=document.createElement("div");b.className="body-ind";renderList(node.body,b);el.appendChild(b);
+  }else if(node.type==="loopN"){
+    el.className="blk container cat-loop";
+    const head=document.createElement("div");head.className="blk-head";
+    head.innerHTML=`<span class="kw">wiederhole</span>`;
+    const sel=document.createElement("select");
+    [2,3,4,5,6,7,8].forEach(n=>{const o=document.createElement("option");o.value=n;o.textContent=n;sel.appendChild(o);});
+    sel.value=node.count;
+    sel.onchange=()=>{node.count=+sel.value;};
+    head.appendChild(sel);
+    head.insertAdjacentHTML("beforeend",`<span class="kw">mal</span>`);
+    head.appendChild(rmBtn(node,arr));
+    el.appendChild(head);
+    const b=document.createElement("div");b.className="body-ind";renderList(node.body,b);el.appendChild(b);
+  }else{
+    el.className=`blk cat-${BLOCK_CAT[node.type]}`;
+    el.innerHTML=`<span>${BLOCKDEFS[node.type].label}</span>`;
+    el.appendChild(rmBtn(node,arr));
+  }
+  makeDraggable(el,node,arr);
+  return el;
+}
+function renderAll(){renderPalette();progEl.innerHTML="";renderList(program,progEl);}
+
+/* ================= Simulation (Frames sammeln) ================= */
+function simulate(maze,prog){
+  let [x,y]=maze.start,dir=maze.startDir,steps=0,crashed=false,done=false,hasKey=false;
+  let doorOpen=maze.door===null, keyTaken=maze.key===null;
+  const isDoor=(gx,gy)=>maze.door&&!doorOpen&&maze.door[0]===gx&&maze.door[1]===gy;
+  const walkable=(gx,gy)=>maze.grid[gy]&&maze.grid[gy][gx]==="."&&!isDoor(gx,gy);
+  const frames=[];
+  const snap=ev=>frames.push({x,y,dir,ev,hasKey,doorOpen,keyTaken});
+  snap(null);
+  const condVal=c=>{
+    if(c==="door"){const[dx,dy]=DIRS[dir];return isDoor(x+dx,y+dy);}
+    if(c==="onKey"){return !!(maze.key&&!keyTaken&&maze.key[0]===x&&maze.key[1]===y);}
+    if(c==="hasKey"){return hasKey;}
+    const d=c==="front"?dir:c==="right"?(dir+1)%4:(dir+3)%4;
+    return walkable(x+DIRS[d][0],y+DIRS[d][1]);
+  };
+  const atGoal=()=>x===maze.goal[0]&&y===maze.goal[1];
+  function exec(blocks){
+    for(const b of blocks){
+      if(done||crashed||steps>MAX_STEPS)return;
+      if(b.type==="fwd"){
+        steps++;
+        const[dx,dy]=DIRS[dir],nx=x+dx,ny=y+dy;
+        if(!walkable(nx,ny)){crashed=true;snap("crash");return;}
+        x=nx;y=ny;
+        snap(null);
+        if(atGoal()){done=true;snap("goal");return;}
+      }else if(b.type==="tr"){steps++;dir=(dir+1)%4;snap(null);}
+      else if(b.type==="tl"){steps++;dir=(dir+3)%4;snap(null);}
+      else if(b.type==="tu"){steps++;dir=(dir+2)%4;snap(null);}
+      else if(b.type==="pickup"){
+        steps++;
+        if(maze.key&&!keyTaken&&maze.key[0]===x&&maze.key[1]===y){hasKey=true;keyTaken=true;}
+        snap(null);
+      }
+      else if(b.type==="open"){
+        steps++;
+        const[dx,dy]=DIRS[dir];
+        if(hasKey&&isDoor(x+dx,y+dy)){doorOpen=true;hasKey=false;snap("open");}
+        else snap(null);
+      }
+      else if(b.type==="if"){exec(condVal(b.cond)?b.then:b.else);}
+      else if(b.type==="loop"){
+        while(!done&&!crashed&&steps<=MAX_STEPS&&!atGoal()){
+          const s0=steps;exec(b.body);
+          if(steps===s0)steps++; // leerer Rumpf -> kein Endlos-Hänger
+        }
+      }
+      else if(b.type==="loopN"){
+        for(let i=0;i<b.count&&!done&&!crashed&&steps<=MAX_STEPS;i++){exec(b.body);}
+      }
+    }
+  }
+  if(atGoal())done=true;else exec(prog);
+  if(!done&&!crashed)snap("empty");
+  return{done,crashed,frames,steps};
+}
+
+/* ================= Canvas-Zeichnung ================= */
+const CELL=30;
+const cvs=[0,1,2].map(i=>document.getElementById("cv"+i));
+const sts=[0,1,2].map(i=>document.getElementById("st"+i));
+function setupCanvas(){
+  MAZES.forEach((m,i)=>{
+    cvs[i].width=m.w*CELL;cvs[i].height=m.h*CELL;
+    drawMaze(i,{x:m.start[0],y:m.start[1],dir:m.startDir,ev:null,hasKey:false,doorOpen:m.door===null,keyTaken:m.key===null});
+  });
+}
+function drawMaze(i,st){
+  const m=MAZES[i],c=cvs[i].getContext("2d");
+  c.fillStyle="#0b2440";c.fillRect(0,0,m.w*CELL,m.h*CELL);
+  for(let y=0;y<m.h;y++)for(let x=0;x<m.w;x++){
+    if(m.grid[y][x]==="#"){
+      c.fillStyle="#1b4068";c.fillRect(x*CELL,y*CELL,CELL,CELL);
+      c.strokeStyle="#27507f";c.strokeRect(x*CELL+.5,y*CELL+.5,CELL-1,CELL-1);
+    }else{
+      c.strokeStyle="rgba(39,80,127,.35)";c.strokeRect(x*CELL+.5,y*CELL+.5,CELL-1,CELL-1);
+    }
+  }
+  // Schott (verriegelt): kupferfarben schraffiert
+  if(m.door&&!st.doorOpen){
+    const[tx,ty]=m.door;
+    c.fillStyle="#5a3c17";c.fillRect(tx*CELL,ty*CELL,CELL,CELL);
+    c.strokeStyle="#e0973f";c.lineWidth=2;
+    c.strokeRect(tx*CELL+3,ty*CELL+3,CELL-6,CELL-6);
+    // Diagonalschraffur
+    c.beginPath();
+    for(let o=6;o<CELL;o+=8){
+      c.moveTo(tx*CELL+o,ty*CELL+4);c.lineTo(tx*CELL+4,ty*CELL+o);
+      c.moveTo(tx*CELL+CELL-4,ty*CELL+o);c.lineTo(tx*CELL+o,ty*CELL+CELL-4);
+    }
+    c.lineWidth=1;c.stroke();
+  }
+  // Schlüsselkarte – 🔑 Emoji
+  if(m.key&&!st.keyTaken){
+    const[kx,ky]=m.key;
+    c.font="20px serif";c.textAlign="center";c.textBaseline="middle";
+    c.fillText("🔑",kx*CELL+CELL/2,ky*CELL+CELL/2+1);
+  }
+  // Ladestation – ⚡ Emoji
+  const[gx,gy]=m.goal;
+  c.font="20px serif";c.textAlign="center";c.textBaseline="middle";
+  c.fillText("⚡",gx*CELL+CELL/2,gy*CELL+CELL/2+1);
+  // Roboter – Pfeil (zeigt Fahrtrichtung)
+  const px=st.x*CELL+CELL/2,py=st.y*CELL+CELL/2;
+  const a=[-Math.PI/2,0,Math.PI/2,Math.PI][st.dir];
+  const col=st.ev==="crash"?"#f07a6e":st.ev==="goal"?"#5fd6a2":"#dce9f7";
+  const r=CELL*0.38;
+  c.save();c.translate(px,py);c.rotate(a);
+  c.fillStyle=col;
+  c.beginPath();
+  c.moveTo(r,0);c.lineTo(-r*.6,-r*.7);c.lineTo(-r*.25,0);c.lineTo(-r*.6,r*.7);
+  c.closePath();c.fill();
+  // Kontur für bessere Sichtbarkeit
+  c.strokeStyle="rgba(0,0,0,0.35)";c.lineWidth=1;c.stroke();
+  c.restore();
+  if(st.hasKey){c.fillStyle="#f5c96a";c.beginPath();c.arc(px,py,3.5,0,7);c.fill();}
+  if(st.ev==="crash"){
+    c.strokeStyle="#f07a6e";c.lineWidth=2;
+    c.beginPath();c.moveTo(px-9,py-9);c.lineTo(px+9,py+9);c.moveTo(px+9,py-9);c.lineTo(px-9,py+9);c.stroke();
+  }
+}
+
+/* ================= Lauf & Animation ================= */
+const runBtn=document.getElementById("runBtn"),resetBtn=document.getElementById("resetBtn"),rewindBtn=document.getElementById("rewindBtn");
+let iv=null;
+const triesEl=document.getElementById("tries");
+const hint1=document.getElementById("hint1"),hint2=document.getElementById("hint2");
+function setStatus(i,txt,cls){sts[i].textContent=txt;sts[i].className="status "+cls;}
+
+runBtn.onclick=()=>{
+  if(animating)return;
+  if(program.length===0){setStatus(0,"kein Programm","bad");return;}
+  tries++;triesEl.textContent="Übertragungen: "+tries;
+  const results=MAZES.map(m=>simulate(m,program));
+  animating=true;renderAll();runBtn.disabled=true;resetBtn.disabled=true;rewindBtn.disabled=false;
+  [0,1,2].forEach(i=>setStatus(i,"läuft …","run"));
+  let f=0;
+  const maxF=Math.max(...results.map(r=>r.frames.length));
+  iv=setInterval(()=>{
+    let active=false;
+    results.forEach((r,i)=>{
+      if(f<r.frames.length){
+        drawMaze(i,r.frames[Math.min(f,r.frames.length-1)]);
+        if(f<r.frames.length-1)active=true;
+        else setStatus(i,
+          r.done?"✓ Station erreicht ("+r.steps+" Schritte)":
+          r.crashed?"✗ Kollision – Roboter zerstört":"✗ Akku leer (Schrittlimit)",
+          r.done?"ok":"bad");
+      }
+    });
+    f++;
+    if(!active&&f>=maxF){
+      clearInterval(iv);iv=null;animating=false;runBtn.disabled=false;resetBtn.disabled=false;renderAll();
+      if(results.every(r=>r.done))reveal();
+      else{
+        if(tries>=8)hint1.style.display="block";
+        if(tries>=15)hint2.style.display="block";
+      }
+    }
+  },70);
+};
+rewindBtn.onclick=()=>{
+  clearInterval(iv);iv=null;
+  animating=false;
+  runBtn.disabled=false;resetBtn.disabled=false;rewindBtn.disabled=true;
+  setupCanvas();
+  [0,1,2].forEach(i=>setStatus(i,"bereit",""));
+  renderAll();
+};
+resetBtn.onclick=()=>{
+  if(animating)return;
+  rewindBtn.disabled=true;
+  program.forEach(restock);program.length=0;
+  selSlot={arr:program,idx:0};renderAll();setupCanvas();
+  [0,1,2].forEach(i=>setStatus(i,"bereit",""));
+};
+
+function reveal(){
+  const w=[26,9,18,26,31,21,30].map(n=>String.fromCharCode(n^91)).join("");
+  const wEl=document.getElementById("word");wEl.innerHTML="";
+  [...w].forEach((ch,i)=>{
+    const s=document.createElement("span");s.textContent=ch;
+    s.style.animationDelay=(i*0.18)+"s";wEl.appendChild(s);
+  });
+  document.getElementById("reveal").style.display="flex";
+}
+
+/* ================= Globale Drag-Listener ================= */
+const palPanel=document.getElementById("palPanel");
+document.addEventListener("mousemove",e=>{
+  if(!dragState)return;
+  dragState.ghostEl.style.left=e.clientX+"px";
+  dragState.ghostEl.style.top=e.clientY+"px";
+  const overPal=!!e.target.closest("#palPanel");
+  palPanel.classList.toggle("drag-over",overPal);
+  if(overPal){
+    document.querySelectorAll(".slot.drop-target").forEach(s=>s.classList.remove("drop-target"));
+    dragState.targetSlot=null;
+  }
+});
+document.addEventListener("mouseup",e=>{
+  if(dragState)dragState.dropEl=e.target;
+  endDrag();
+});
+document.addEventListener("touchmove",e=>{
+  if(!dragState)return;
+  e.preventDefault();
+  const t=e.touches[0];
+  dragState.ghostEl.style.left=t.clientX+"px";
+  dragState.ghostEl.style.top=t.clientY+"px";
+  const under=document.elementFromPoint(t.clientX,t.clientY);
+  const overPal=!!under?.closest("#palPanel");
+  palPanel.classList.toggle("drag-over",overPal);
+  if(overPal){
+    document.querySelectorAll(".slot.drop-target").forEach(s=>s.classList.remove("drop-target"));
+    dragState.targetSlot=null;
+  }else{
+    const slot=under&&under.closest&&under.closest(".slot");
+    if(slot&&slot._slotRef)setDropTarget(slot);
+  }
+},{passive:false});
+document.addEventListener("touchend",e=>{
+  if(dragState&&e.changedTouches.length){
+    const t=e.changedTouches[0];
+    dragState.dropEl=document.elementFromPoint(t.clientX,t.clientY);
+  }
+  endDrag();
+});
+document.addEventListener("touchcancel",()=>{endDrag();});
+
+setupCanvas();renderAll();
+</script>
+</body>
+</html>
