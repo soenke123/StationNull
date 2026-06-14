@@ -83,8 +83,14 @@
     color:transparent;font-family:var(--mono);font-size:11px;
     padding:1px 8px;cursor:pointer;margin:0;overflow:hidden}
   .slot.sel{border-top-color:var(--copper);background:rgba(224,151,63,.05)}
-  .slot:hover{border-top-color:rgba(143,176,212,.35)!important;color:rgba(143,176,212,.35)!important;overflow:visible!important}
+  .slot:hover{border-top-color:rgba(143,176,212,.55)!important;color:rgba(143,176,212,.6)!important;overflow:visible!important}
   .slot:hover .slot-label{display:inline}
+  @media(min-width:641px){
+    .slot{padding:4px 8px;border-top:1px dashed rgba(143,176,212,.2);
+      color:rgba(143,176,212,.32);overflow:visible}
+    .slot .slot-label{display:inline;font-size:10px}
+    .slot .drop-arr{display:none}
+  }
   .blk{font-family:var(--mono);font-size:13px;border:1px solid var(--paper-dim);
     background:var(--bp-mid);padding:6px 8px;margin:2px 0;display:flex;
     align-items:center;gap:8px;position:relative}
@@ -354,7 +360,7 @@
 <main>
   <div class="left-col">
     <header>
-      <div class="eyebrow">INFORMATIK-RALLYE · LETZTE STATION</div>
+      <div class="eyebrow">Siegel des Himmels</div>
       <h1>Station <span style="font-family:var(--mono);color:var(--cat-turn);font-weight:700">null</span></h1>
       <p class="brief">
         Ein Wartungsroboter ist in <b>drei verschiedenen Sektoren</b> gestrandet.
@@ -406,10 +412,12 @@
     <div class="maze-card"><div class="maze-head"><span class="nm">SEKTOR A · LEITUNGSSCHACHT</span><span class="status" id="st0">bereit</span></div><canvas id="cv0"></canvas></div>
     <div class="maze-card"><div class="maze-head"><span class="nm">SEKTOR B · KÜHLTRAKT</span><span class="status" id="st1">bereit</span></div><canvas id="cv1"></canvas></div>
     <div class="maze-card"><div class="maze-head"><span class="nm">SEKTOR C · REAKTORRING</span><span class="status" id="st2">bereit</span></div><canvas id="cv2"></canvas></div>
-    <p class="legend"><span class="cp">⚡</span> Ladestation (Kreis+Blitz) &nbsp;·&nbsp;
-      <span class="cp">▦</span> Schott (verriegelt) &nbsp;·&nbsp;
-      🔑 Schlüsselkarte &nbsp;·&nbsp;
-      <span class="cp">▶</span> Roboter (goldener Punkt = Karte an Bord)</p>
+    <p class="legend">
+      <span><span class="cp">⚡</span> Ladestation</span><br>
+      <span><span class="cp">▦</span> Schott (verriegelt)</span><br>
+      <span>🔑 Schlüsselkarte</span><br>
+      <span><span class="cp">▶</span> Roboter (goldener Punkt = Karte an Bord)</span>
+    </p>
   </section>
 </main>
 <div id="reveal">
