@@ -73,6 +73,8 @@
   .pal-btn .stock{font-size:11px;color:var(--copper);border:1px solid var(--copper-dim);
     padding:1px 6px;border-radius:10px;white-space:nowrap}
   .pal-note{font-size:12px;color:var(--paper-dim);line-height:1.5;margin-top:10px}
+  .note-mobile{display:none}
+  @media(max-width:640px){.note-mobile{display:block}.note-desktop{display:none}}
 
   /* ---- Programm ---- */
   #progPanel{min-height:340px}
@@ -151,7 +153,7 @@
     .slot.sel{border-top-color:var(--copper)!important;color:var(--copper)!important;
       background:rgba(224,151,63,.09)!important}
     /* Hinweistext im Lager auf Mobile ausblenden (Modal ersetzt das) */
-    .pal-note{display:none}}
+}
 
   /* ---- Modal (Baustein-Auswahl) ---- */
   #mmModal{display:none;position:fixed;inset:0;background:rgba(5,16,30,.78);
@@ -372,7 +374,10 @@
     <section class="panel" id="palPanel">
     <h2>Bausteine · Lager</h2>
     <div id="palette"></div>
-    <p class="pal-note">Bausteine per <b>Drag&amp;Drop</b> ins Programm ziehen. Oder: auf eine <b>Einfügestelle</b> klicken (‣) – dann öffnet sich ein Auswahlmenü. × legt einen Baustein zurück ins Lager.</p>
+    <p class="pal-note">
+      <span class="note-mobile">Auf die <b>Lücken</b> im Programm tippen – es öffnet sich ein Auswahlmenü. × legt einen Baustein zurück.</span>
+      <span class="note-desktop">Bausteine per <b>Drag&amp;Drop</b> ins Programm ziehen – oder auf eine <b>Lücke</b> (‣) klicken, dann öffnet sich ein Auswahlmenü. × legt einen Baustein zurück.</span>
+    </p>
   </section>
 
   <section class="panel" id="progPanel">
@@ -580,6 +585,7 @@ function makeDraggable(el,node,arr){
   el.addEventListener("touchstart",e=>{
     if(e.target.closest(".rm")||e.target.tagName==="SELECT"||animating)return;
     if(e.target.closest(".slot"))return;
+    if(window.innerWidth<=640)return; // Handy: kein Block-Drag, Scrollen bleibt frei
     e.preventDefault();e.stopPropagation();
     const t0=e.touches[0],sx=t0.clientX,sy=t0.clientY;let fired=false;
     function tmv(ev){
@@ -619,20 +625,29 @@ function renderPalette(){
         }
         document.addEventListener("mousemove",mv);document.addEventListener("mouseup",up);
       });
-      b.addEventListener("touchstart",e=>{
-        e.preventDefault();
-        const t0=e.touches[0],sx=t0.clientX,sy=t0.clientY;let fired=false;
-        function tmv(ev){
-          if(fired)return;
-          const t2=ev.touches[0];
-          if(Math.hypot(t2.clientX-sx,t2.clientY-sy)<8)return;
-          fired=true;cleanup();startDrag({type:'palette',blockType:k},t2.clientX,t2.clientY);
-        }
-        function tup(){cleanup();if(!fired)insertBlock(k);}
-        function cleanup(){document.removeEventListener("touchmove",tmv);document.removeEventListener("touchend",tup);}
-        document.addEventListener("touchmove",tmv,{passive:false});
-        document.addEventListener("touchend",tup);
-      },{passive:false});
+      if(window.innerWidth>640){
+        // Desktop/Tablet: Drag oder Tap
+        b.addEventListener("touchstart",e=>{
+          e.preventDefault();
+          const t0=e.touches[0],sx=t0.clientX,sy=t0.clientY;let fired=false;
+          function tmv(ev){
+            if(fired)return;
+            const t2=ev.touches[0];
+            if(Math.hypot(t2.clientX-sx,t2.clientY-sy)<8)return;
+            fired=true;cleanup();startDrag({type:'palette',blockType:k},t2.clientX,t2.clientY);
+          }
+          function tup(){cleanup();if(!fired)insertBlock(k);}
+          function cleanup(){document.removeEventListener("touchmove",tmv);document.removeEventListener("touchend",tup);}
+          document.addEventListener("touchmove",tmv,{passive:false});
+          document.addEventListener("touchend",tup);
+        },{passive:false});
+      }else{
+        // Handy: kein Drag, kein preventDefault → Scrollen bleibt frei
+        b.addEventListener("touchend",e=>{
+          e.preventDefault();
+          insertBlock(k);
+        });
+      }
     }
     palEl.appendChild(b);
   }
