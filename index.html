@@ -230,6 +230,25 @@
     background:var(--ok);vertical-align:text-bottom;
     animation:blink .7s step-end infinite}
   @keyframes blink{50%{opacity:0}}
+  #bootEnter{
+    display:none;
+    margin-top:20px;
+    width:100%;
+    font-family:var(--mono);font-size:13px;letter-spacing:.2em;
+    padding:11px 0;
+    background:none;
+    color:var(--ok);
+    border:2px solid var(--ok);
+    cursor:pointer;
+    text-transform:uppercase;
+    transition:background .15s, color .15s;
+    animation:pulse-border 1.2s ease-in-out infinite;
+  }
+  #bootEnter:hover{background:var(--ok);color:var(--bp-deep)}
+  @keyframes pulse-border{
+    0%,100%{box-shadow:0 0 0 0 rgba(95,214,162,.0)}
+    50%{box-shadow:0 0 0 4px rgba(95,214,162,.35)}
+  }
 </style>
 </head>
 <body>
@@ -238,6 +257,7 @@
 <div id="bootScreen">
   <div id="bootConsole">
     <span id="bootLines"></span><span id="bootCursor"></span>
+    <button id="bootEnter">[ ENTER — STATION BETRETEN ]</button>
   </div>
 </div>
 <script>
@@ -272,14 +292,24 @@
     }, t);
   });
 
+  const btn = document.getElementById('bootEnter');
   const lastT = lines[lines.length - 1].t;
+
+  function enter(){
+    screen.classList.add('fade-out');
+    setTimeout(() => screen.remove(), 520);
+  }
+
   setTimeout(() => {
     cursor.style.display = 'none';
-    setTimeout(() => {
-      screen.classList.add('fade-out');
-      setTimeout(() => screen.remove(), 520);
-    }, 2000);
+    btn.style.display = 'block';
+    btn.focus();
   }, lastT + 80);
+
+  btn.addEventListener('click', enter);
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && btn.style.display === 'block') enter();
+  });
 })();
 </script>
 
